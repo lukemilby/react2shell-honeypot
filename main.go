@@ -78,7 +78,7 @@ func main() {
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(logDir, 0o755)
 		if err != nil {
-			log.Fatalf("Erorr: %s ", err)
+			log.Fatalf("Error: %s ", err)
 		}
 	}
 
