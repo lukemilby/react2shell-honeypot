@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -64,12 +65,12 @@ func jsonLoggerMiddleware(next http.Handler) http.Handler {
 		// Marshal to JSON
 		logJSON, err := json.Marshal(entry)
 		if err != nil {
-			log.Printf("Error encoding log: %v", err)
+			slog.Error("Error encoding log: %v", err)
 			return
 		}
 
 		// Print the JSON line
-		log.Println(string(logJSON))
+		slog.Info(string(logJSON))
 	})
 }
 
@@ -78,20 +79,26 @@ func main() {
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(logDir, 0o755)
 		if err != nil {
-			log.Fatalf("Error: %s ", err)
+			slog.Error("Error: %s ", err)
 		}
 	}
 
 	// Open the file
 	file, err := os.OpenFile(logDir+"/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Error: %s", err)
 	}
 	defer file.Close()
 
-	multiWriter := io.MultiWriter(os.Stdout, file)
+	w := io.MultiWriter(os.Stdout, file)
 
-	log.SetOutput(multiWriter)
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+
+	logger := slog.New(slog.NewJSONHandler(w, opts))
+
+	slog.SetDefault(logger)
 
 	port := ":80"
 	mux := http.NewServeMux()
