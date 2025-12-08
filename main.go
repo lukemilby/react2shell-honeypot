@@ -1,13 +1,77 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
+
+type ResponseLog struct {
+	Time    string              `json:"time"`
+	Method  string              `json:"method"`
+	URL     string              `json:"url"`
+	Status  int                 `json:"status"`
+	Size    int                 `json:"size"`
+	Headers map[string][]string `json:"headers"`
+	Body    string              `json:"body"` // Be careful with large bodies!
+}
+
+type responseWriterWrapper struct {
+	http.ResponseWriter
+	statusCode int
+	body       *bytes.Buffer
+}
+
+func (rw *responseWriterWrapper) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriterWrapper) Write(b []byte) (int, error) {
+	rw.body.Write(b)                  // Store a copy
+	return rw.ResponseWriter.Write(b) // Write to the actual client
+}
+
+func jsonLoggerMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Initialize the wrapper
+		wrapper := &responseWriterWrapper{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK, // Default to 200 if WriteHeader is never called
+			body:           &bytes.Buffer{},
+		}
+
+		// Process the request using our wrapper
+		next.ServeHTTP(wrapper, r)
+
+		// Create the log entry
+		entry := ResponseLog{
+			Time:    time.Now().Format(time.RFC3339),
+			Method:  r.Method,
+			URL:     r.URL.String(),
+			Status:  wrapper.statusCode,
+			Size:    wrapper.body.Len(),
+			Headers: wrapper.Header(),
+			Body:    wrapper.body.String(),
+		}
+
+		// Marshal to JSON
+		logJSON, err := json.Marshal(entry)
+		if err != nil {
+			log.Printf("Error encoding log: %v", err)
+			return
+		}
+
+		// Print the JSON line
+		log.Println(string(logJSON))
+	})
+}
 
 func main() {
 	logDir := "/var/log/react2shell-honeypot"
@@ -25,15 +89,21 @@ func main() {
 	}
 	defer file.Close()
 
-	log.SetOutput(file)
+	multiWriter := io.MultiWriter(os.Stdout, file)
+
+	log.SetOutput(multiWriter)
 
 	port := ":80"
-	http.HandleFunc("/", scannerHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", scannerHandler)
+
+	loggedMux := jsonLoggerMiddleware(mux)
 
 	fmt.Printf("🛡️  React2Shell/Next.js Target running on port %s\n", port)
 	fmt.Println("Waiting for scanner signature...")
 	fmt.Println("Logging to /var/logs/react2shell-honeypot/app.log")
-	if err := http.ListenAndServe(port, nil); err != nil {
+
+	if err := http.ListenAndServe(port, loggedMux); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -51,24 +121,21 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 		// If it's not the scanner, just return a generic 404 or 200
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Standard Generic Homepage"))
-		return
 	}
 
 	// Read the body to determine which check is being performed
 	bodyBytes, _ := io.ReadAll(r.Body)
 	bodyStr := string(bodyBytes)
 
-	log.Printf("⚠️  Scanner Detected from %s", r.RemoteAddr)
-
-	log.Printf("Body Payload\n %s", bodyStr)
+	fmt.Printf("Body Payload\n %s", bodyStr)
 
 	// 2. HANDLE RCE CHECK (CVE-2025-55182 / CVE-2025-66478)
 	// The scanner sends a payload containing "41*271".
 	// The scanner expects the server to execute this math (Result: 11111)
 	// and return it in the 'X-Action-Redirect' header.
 	if strings.Contains(bodyStr, "41*271") {
-		log.Println("   ↳ Type: RCE Check Detected")
-		log.Println("   ↳ Action: Emulating Vulnerable Redirect")
+		fmt.Println("   ↳ Type: RCE Check Detected")
+		fmt.Println("   ↳ Action: Emulating Vulnerable Redirect")
 
 		// The Python script regex: re.search(r'.*/login\?a=11111.*', redirect_header)
 		w.Header().Set("X-Action-Redirect", "/login?a=11111;307;")
@@ -83,8 +150,8 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 	// The scanner looks for specific JSON in the request (usually "$1:aa:aa")
 	// And expects a 500 Error containing 'E{"digest"' in the body.
 	if strings.Contains(bodyStr, "$1:aa:aa") {
-		log.Println("   ↳ Type: Safe Check Detected")
-		log.Println("   ↳ Action: Emulating 500 Error Leak")
+		fmt.Println("   ↳ Type: Safe Check Detected")
+		fmt.Println("   ↳ Action: Emulating 500 Error Leak")
 
 		// Ensure we don't send Netlify/Vercel headers (as per is_mitigated logic)
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
