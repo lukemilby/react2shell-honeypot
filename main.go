@@ -127,7 +127,9 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, _ := io.ReadAll(r.Body)
 	bodyStr := string(bodyBytes)
 
-	fmt.Printf("Body Payload\n %s", bodyStr)
+	fmt.Println("Body Payload")
+	fmt.Println("---------------------------------------")
+	fmt.Printf("%s", bodyStr)
 
 	isScanner := len(r.Header.Get("X-Nextjs-Request-Id")) > 0 || len(r.Header.Get("X-Nextjs-Html-Request-Id")) > 0
 
@@ -135,6 +137,8 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 		// If it's not the scanner, just return a generic 404 or 200
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Standard Generic Homepage"))
+
+		fmt.Println("---------------------------------------")
 		return
 	}
 
@@ -143,6 +147,7 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Rustsploit detected")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("root"))
+		fmt.Println("---------------------------------------")
 		return
 	}
 
@@ -160,6 +165,8 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Status doesn't strictly matter for the RCE regex check, but 200 is standard
 		w.WriteHeader(http.StatusOK)
+
+		fmt.Println("---------------------------------------")
 		return
 	}
 
@@ -180,6 +187,7 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 		responseBody := `0:["$@1",["$@2",null]]
 1:E{"digest":"NEXT_REDIRECT;push;/login?a=11111;307;"}`
 		w.Write([]byte(responseBody))
+		fmt.Println("---------------------------------------")
 		return
 	}
 
