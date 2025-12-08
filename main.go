@@ -57,7 +57,7 @@ func jsonLoggerMiddleware(next http.Handler) http.Handler {
 			URL:     r.URL.String(),
 			Status:  wrapper.statusCode,
 			Size:    wrapper.body.Len(),
-			Headers: wrapper.Header(),
+			Headers: r.Header,
 			Body:    wrapper.body.String(),
 		}
 
