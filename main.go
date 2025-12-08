@@ -134,7 +134,7 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 	if len(bodyStr) > 0 {
 		fmt.Println("Body Payload")
 		fmt.Println("---------------------------------------")
-		fmt.Printf("%s", bodyStr)
+		fmt.Printf("%s\n", bodyStr)
 		fmt.Println("---------------------------------------")
 	}
 
