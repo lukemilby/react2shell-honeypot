@@ -14,14 +14,14 @@ import (
 )
 
 type ResponseLog struct {
-	Host    string              `json:"host"`
-	Time    string              `json:"time"`
-	Method  string              `json:"method"`
-	URL     string              `json:"url"`
-	Status  int                 `json:"status"`
-	Size    int                 `json:"size"`
-	Headers map[string][]string `json:"headers"`
-	Body    string              `json:"body"` // Be careful with large bodies!
+	RemoteHost string              `json:"remotehost"`
+	Time       string              `json:"time"`
+	Method     string              `json:"method"`
+	URL        string              `json:"url"`
+	Status     int                 `json:"status"`
+	Size       int                 `json:"size"`
+	Headers    map[string][]string `json:"headers"`
+	Body       string              `json:"body"` // Be careful with large bodies!
 }
 
 type responseWriterWrapper struct {
@@ -54,14 +54,14 @@ func jsonLoggerMiddleware(next http.Handler) http.Handler {
 
 		// Create the log entry
 		entry := ResponseLog{
-			Host:    r.Host,
-			Time:    time.Now().Format(time.RFC3339),
-			Method:  r.Method,
-			URL:     r.URL.String(),
-			Status:  wrapper.statusCode,
-			Size:    wrapper.body.Len(),
-			Headers: r.Header,
-			Body:    wrapper.body.String(),
+			RemoteHost: r.RemoteAddr,
+			Time:       time.Now().Format(time.RFC3339),
+			Method:     r.Method,
+			URL:        r.URL.String(),
+			Status:     wrapper.statusCode,
+			Size:       wrapper.body.Len(),
+			Headers:    r.Header,
+			Body:       wrapper.body.String(),
 		}
 
 		// Marshal to JSON
