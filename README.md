@@ -25,6 +25,12 @@ docker run -d \
 
 ```
 
+### logs
+
+```shell
+docker logs -f react2shell-honeypot
+```
+
 #### Kill docker container
 
 ```shell
