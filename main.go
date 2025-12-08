@@ -5,11 +5,29 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
 func main() {
-	port := ":8080"
+	logDir := "/var/log/react2shell-honeypot"
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		err := os.MkdirAll(logDir, 0o755)
+		if err != nil {
+			log.Fatalf("Erorr: %s ", err)
+		}
+	}
+
+	// Open the file
+	file, err := os.OpenFile(logDir+"/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	log.SetOutput(file)
+
+	port := ":80"
 	http.HandleFunc("/", scannerHandler)
 
 	fmt.Printf("🛡️  React2Shell/Next.js Target running on port %s\n", port)
