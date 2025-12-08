@@ -136,6 +136,13 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Body Payload\n %s", bodyStr)
 
+	if strings.Contains(bodyStr, "whoami") {
+		fmt.Println("Rustsploit detected")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("root"))
+		return
+	}
+
 	// 2. HANDLE RCE CHECK (CVE-2025-55182 / CVE-2025-66478)
 	// The scanner sends a payload containing "41*271".
 	// The scanner expects the server to execute this math (Result: 11111)
