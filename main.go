@@ -70,7 +70,9 @@ func jsonLoggerMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Print the JSON line
+		fmt.Println("---------------------------------------")
 		slog.Info(string(logJSON))
+		fmt.Println("---------------------------------------")
 	})
 }
 
@@ -127,10 +129,12 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, _ := io.ReadAll(r.Body)
 	bodyStr := string(bodyBytes)
 
-	fmt.Println("Body Payload")
-	fmt.Println("---------------------------------------")
-	fmt.Printf("%s", bodyStr)
-	fmt.Println("---------------------------------------")
+	if len(bodyStr) > 0 {
+		fmt.Println("Body Payload")
+		fmt.Println("---------------------------------------")
+		fmt.Printf("%s", bodyStr)
+		fmt.Println("---------------------------------------")
+	}
 
 	isScanner := len(r.Header.Get("X-Nextjs-Request-Id")) > 0 || len(r.Header.Get("X-Nextjs-Html-Request-Id")) > 0
 
