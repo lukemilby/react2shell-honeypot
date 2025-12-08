@@ -122,13 +122,6 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 	// Headers from script:
 	// "X-Nextjs-Request-Id": "b5dce965"
 	// "X-Nextjs-Html-Request-Id": "SSTMXm7OJ_g0Ncx6jpQt9"
-	isScanner := len(r.Header.Get("X-Nextjs-Request-Id")) > 0 || len(r.Header.Get("X-Nextjs-Html-Request-Id")) > 0
-
-	if !isScanner {
-		// If it's not the scanner, just return a generic 404 or 200
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Standard Generic Homepage"))
-	}
 
 	// Read the body to determine which check is being performed
 	bodyBytes, _ := io.ReadAll(r.Body)
@@ -136,6 +129,16 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Body Payload\n %s", bodyStr)
 
+	isScanner := len(r.Header.Get("X-Nextjs-Request-Id")) > 0 || len(r.Header.Get("X-Nextjs-Html-Request-Id")) > 0
+
+	if !isScanner {
+		// If it's not the scanner, just return a generic 404 or 200
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Standard Generic Homepage"))
+		return
+	}
+
+	// Handle Rustsploit
 	if strings.Contains(bodyStr, "whoami") {
 		fmt.Println("Rustsploit detected")
 		w.WriteHeader(http.StatusOK)
