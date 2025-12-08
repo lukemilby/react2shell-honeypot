@@ -14,6 +14,7 @@ import (
 )
 
 type ResponseLog struct {
+	Host    string              `json:"host"`
 	Time    string              `json:"time"`
 	Method  string              `json:"method"`
 	URL     string              `json:"url"`
@@ -53,6 +54,7 @@ func jsonLoggerMiddleware(next http.Handler) http.Handler {
 
 		// Create the log entry
 		entry := ResponseLog{
+			Host:    r.Host,
 			Time:    time.Now().Format(time.RFC3339),
 			Method:  r.Method,
 			URL:     r.URL.String(),
