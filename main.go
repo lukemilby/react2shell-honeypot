@@ -32,6 +32,7 @@ func main() {
 
 	fmt.Printf("🛡️  React2Shell/Next.js Target running on port %s\n", port)
 	fmt.Println("Waiting for scanner signature...")
+	fmt.Println("Logging to /var/logs/react2shell-honeypot/app.log")
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}
